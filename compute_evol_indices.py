@@ -78,7 +78,7 @@ if __name__=='__main__':
         print("Unable to locate VAE model checkpoint")
         sys.exit(0)
     
-    list_valid_mutations, evol_indices, _, _, enc_mean = model.compute_evol_indices(msa_data=data,
+    list_valid_mutations, evol_indices, _, _, enc_mean, decoder_out = model.compute_evol_indices(msa_data=data,
                                                     list_mutations_location=args.mutations_location, 
                                                     num_samples=args.num_samples_compute_evol_indices,
                                                     batch_size=args.batch_size)
@@ -88,6 +88,7 @@ if __name__=='__main__':
     df['mutations'] = list_valid_mutations
     df['evol_indices'] = evol_indices
     df['mean_encoder'] = pd.Series(enc_mean.tolist())
+    df['decoder_log_recon'] = pd.Series(decoder_out.tolist())
     df = pd.DataFrame(df)
     
     evol_indices_output_filename = args.output_evol_indices_location+os.sep+protein_name+'_'+str(args.num_samples_compute_evol_indices)+'_samples'+args.output_evol_indices_filename_suffix+'.csv'

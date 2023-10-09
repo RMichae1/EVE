@@ -324,6 +324,7 @@ class VAE_model(nn.Module):
         dataloader = torch.utils.data.DataLoader(mutated_sequences_one_hot, batch_size=batch_size, shuffle=False, num_workers=0, pin_memory=True)
         prediction_matrix = torch.zeros((len(list_valid_mutations),num_samples))
         encoder_mean_matrix = torch.zeros((len(list_valid_mutations), self.encoder.z_dim))
+        decoder_recon_log_softmax = torch.zeros((len(list_valid_mutations), self.seq_len, self.alphabet_size))
 
         with torch.no_grad():
             for i, batch in enumerate(tqdm.tqdm(dataloader, 'Looping through mutation batches')):
@@ -332,12 +333,14 @@ class VAE_model(nn.Module):
                     seq_predictions, _, _ = self.all_likelihood_components(x)
                     prediction_matrix[i*batch_size:i*batch_size+len(x),j] = seq_predictions
                 encoder_mean, _ = self.encoder(x)
+                recon_x_log = self.decoder(encoder_mean)
                 encoder_mean_matrix[i*batch_size:i*batch_size+len(x)] = encoder_mean
+                decoder_recon_log_softmax[i*batch_size:i*batch_size+len(x)] = recon_x_log
                 tqdm.tqdm.write('\n')
             mean_predictions = prediction_matrix.mean(dim=1, keepdim=False)
             std_predictions = prediction_matrix.std(dim=1, keepdim=False)
             delta_elbos = mean_predictions - mean_predictions[0]
             evol_indices =  - delta_elbos.detach().cpu().numpy()
 
-        return list_valid_mutations, evol_indices, mean_predictions[0].detach().cpu().numpy(), std_predictions.detach().cpu().numpy(), encoder_mean_matrix.detach().cpu().numpy()
+        return list_valid_mutations, evol_indices, mean_predictions[0].detach().cpu().numpy(), std_predictions.detach().cpu().numpy(), encoder_mean_matrix.detach().cpu().numpy(), decoder_recon_log_softmax.detach().cpu().numpy()
 
